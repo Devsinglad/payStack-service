@@ -1,5 +1,21 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsString,
+  ArrayNotEmpty,
+  IsIn,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+// Define valid permissions
+export const VALID_PERMISSIONS = [
+  'deposit',
+  'transfer',
+  'read',
+  'write',
+  'delete',
+  'admin',
+];
 
 export class CreateApiKeyDto {
   @ApiProperty({
@@ -12,16 +28,20 @@ export class CreateApiKeyDto {
 
   @ApiProperty({
     example: ['deposit', 'transfer', 'read'],
-    description: 'permissions of the API key',
+    description: 'Permissions of the API key',
+    enum: VALID_PERMISSIONS,
+    isArray: true,
   })
   @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
   permissions: string[];
 
   @ApiProperty({
     example: '1D',
-    description: 'Expiration date for the API key (optional)',
+    description: 'Expiration period for the API key (1H, 1D, 1M, 1Y)',
   })
   @IsString()
-  @IsOptional()
-  expiresAt?: string;
+  @IsNotEmpty()
+  expiry: string;
 }
