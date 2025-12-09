@@ -8,6 +8,8 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt.guard';
+import { ApiKeyGuard } from './guards/api-key.guard';
+import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { JwtAuthGuard } from './guards/jwt.guard';
         expiresIn: '7d',
       },
     }),
+    PrismaModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -28,7 +31,8 @@ import { JwtAuthGuard } from './guards/jwt.guard';
     JwtStrategy,
     GoogleAuthGuard,
     JwtAuthGuard,
+    ApiKeyGuard,
   ],
-  exports: [AuthService, GoogleAuthGuard, JwtAuthGuard],
+  exports: [AuthService, GoogleAuthGuard, JwtAuthGuard, ApiKeyGuard],
 })
 export class AuthModule {}

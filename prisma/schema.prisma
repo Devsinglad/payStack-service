@@ -25,6 +25,8 @@ model User {
   updatedAt                 DateTime         @updatedAt
   
   apiKeys                   ApiKey[]
+  wallet                    Wallet?
+  transactions              Transaction[]
   
   @@index([email])
   @@index([googleId])
@@ -45,4 +47,37 @@ model ApiKey {
   
   @@index([userId])
   @@index([keyHash])
+}
+
+model Wallet {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletNumber String   @unique @default(uuid())
+  balance      Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([walletNumber])
+}
+
+
+model Transaction {
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reference          String    @unique
+  amount             Float
+  type               String    // deposit, transfer_in, transfer_out
+  status             String    // pending, success, failed
+  paystackReference  String?
+  gatewayResponse    String?
+  metadata           Json?
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([reference])
+  @@index([status])
 }

@@ -10,6 +10,8 @@ export interface AppConfig {
   googleClientSecret: string;
   googleCallbackUrl: string;
   databaseUrl: string;
+  appUrl: string;
+  paystackSecretKey: string;
 }
 
 const parseCorsOrigins = (origins: string | undefined): string[] | boolean => {
@@ -30,4 +32,6 @@ export default registerAs<AppConfig>('app', () => ({
     process.env.GOOGLE_CALLBACK_URL ??
     'http://localhost:3000/auth/google/callback',
   databaseUrl: process.env.DATABASE_URL ?? '',
+  appUrl: process.env.APP_URL ?? 'http://localhost:3000',
+  paystackSecretKey: process.env.PAYSTACK_SECRET_KEY ?? '',
 }));

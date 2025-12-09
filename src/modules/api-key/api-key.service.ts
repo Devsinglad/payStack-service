@@ -86,6 +86,7 @@ export class ApiKeyService extends PrismaClient {
     });
   }
 
+  //===================== Rollover API Key =====================//
   async rollover(rolloverDto: RolloverApiKeyDto, userId: string) {
     const { expired_key_id, expiry } = rolloverDto;
 
@@ -173,6 +174,7 @@ export class ApiKeyService extends PrismaClient {
       expires_at: expiresAt.toISOString(),
     });
   }
+  //===================== Get All API Keys =====================//
 
   async findAll(userId: string) {
     return this.apiKey.findMany({
@@ -217,6 +219,8 @@ export class ApiKeyService extends PrismaClient {
 
     return apiKey;
   }
+
+  //===================== Deactivate API Key =====================//
 
   async remove(id: string, userId: string) {
     // Check if key exists and belongs to user
