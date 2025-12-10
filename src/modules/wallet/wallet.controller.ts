@@ -38,7 +38,6 @@ export class WalletController {
 
   // ==================== DEPOSIT ENDPOINTS ====================
 
-  // 1. Wallet Deposit - Requires JWT or API Key with 'deposit' permission
   @Post('deposit')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('deposit')
@@ -51,7 +50,7 @@ export class WalletController {
     return buildSuccessResponse('Deposit initiated successfully', result);
   }
 
-  // 2. Paystack Webhook - NO AUTH (validated by signature)
+  //====================== PAYSTACK WEBHOOK & CALLBACK ====================
   @Post('paystack/webhook')
   @ApiOperation({ summary: 'Handle Paystack webhook events' })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
@@ -90,7 +89,7 @@ export class WalletController {
     return buildSuccessResponse('Webhook processed successfully', result);
   }
 
-  // Paystack Callback - Handles return from Paystack payment page
+  //====================== PAYSTACK WEBHOOK & CALLBACK END ====================
   @Get('paystack/callback')
   @ApiOperation({ summary: 'Handle Paystack payment callback' })
   @ApiResponse({ status: 200, description: 'Payment callback processed' })
@@ -122,6 +121,7 @@ export class WalletController {
     });
   }
 
+  // ==================== DEPOSIT REFRENCE ====================
   @Get('deposit/:reference/status')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('read')
@@ -179,7 +179,6 @@ export class WalletController {
 
   // ==================== TRANSACTION ENDPOINTS ====================
 
-  // 7. Transaction History - JWT or API Key with 'read' permission
   @Get('transactions')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('read')
