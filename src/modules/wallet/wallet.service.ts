@@ -254,6 +254,11 @@ export class WalletService extends PrismaClient {
 
   // Transfer between wallets
   async transfer(fromUserId: string, toWalletNumber: string, amount: number) {
+    // Validate amount first
+    if (amount <= 0) {
+      throw new BadRequestException('Amount must be greater than zero');
+    }
+
     // Find recipient by wallet number
     const recipientWallet = await this.wallet.findUnique({
       where: { walletNumber: toWalletNumber },
@@ -272,11 +277,44 @@ export class WalletService extends PrismaClient {
       throw new BadRequestException('Insufficient balance');
     }
 
+    const transferData = `${fromUserId}_${toWalletNumber}_${amount}`;
+    const idempotencyKey = `idf_${crypto.createHash('sha256').update(transferData).digest('hex').substring(0, 16)}`;
+
     // ATOMIC TRANSFER using database transaction
     const result = await this.$transaction(async (tx) => {
-      // Deduct from sender
-      await tx.wallet.update({
+      //  to prevent race conditions
+      const existingTransfer = await tx.transaction.findFirst({
+        where: {
+          metadata: {
+            path: ['idempotency_key'],
+            equals: idempotencyKey,
+          },
+          status: 'success',
+        },
+      });
+
+      if (existingTransfer) {
+        return {
+          isDuplicate: true,
+          reference: existingTransfer.reference,
+        };
+      }
+
+      // Get balance  for optimistic locking
+      const freshSenderWallet = await tx.wallet.findUnique({
         where: { userId: fromUserId },
+      });
+
+      if (!freshSenderWallet || freshSenderWallet.balance < amount) {
+        throw new BadRequestException('Insufficient balance');
+      }
+
+      // Deducting from sender with optimistic locking using fresh balance
+       await tx.wallet.update({
+        where: {
+          userId: fromUserId,
+          balance: freshSenderWallet.balance,
+        },
         data: {
           balance: {
             decrement: amount,
@@ -294,7 +332,12 @@ export class WalletService extends PrismaClient {
         },
       });
 
-      // Record both transactions
+      // Generate unique transaction references
+      const timestamp = Date.now();
+      const senderReference = `txf_${timestamp}_${fromUserId}`;
+      const recipientReference = `txf_${timestamp}_${recipientWallet.userId}`;
+
+      // save transactions with idempotency key
       await tx.transaction.createMany({
         data: [
           {
@@ -302,24 +345,45 @@ export class WalletService extends PrismaClient {
             type: 'transfer_out',
             amount: -amount,
             status: 'success',
-            reference: `txf_${Date.now()}_${fromUserId}`,
-            metadata: { to: toWalletNumber },
+            reference: senderReference,
+            metadata: {
+              to: toWalletNumber,
+              idempotency_key: idempotencyKey,
+            },
           },
           {
             userId: recipientWallet.userId,
             type: 'transfer_in',
             amount: amount,
             status: 'success',
-            reference: `txf_${Date.now()}_${recipientWallet.userId}`,
-            metadata: { from: senderWallet.walletNumber },
+            reference: recipientReference,
+            metadata: {
+              from: senderWallet.walletNumber,
+              idempotency_key: idempotencyKey,
+            },
           },
         ],
       });
+
+      return {
+        isDuplicate: false,
+        senderReference,
+        recipientReference,
+      };
     });
+
+    if (result.isDuplicate) {
+      return {
+        status: 'success',
+        message: 'Transfer already processed',
+        reference: result.reference,
+      };
+    }
 
     return {
       status: 'success',
       message: 'Transfer completed',
+      reference: result.senderReference,
     };
   }
 
