@@ -41,6 +41,14 @@ export class WalletController {
   @Post('deposit')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('deposit')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Initiate a deposit transaction' })
+  @ApiResponse({ status: 200, description: 'Deposit initiated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
   async deposit(@GetUser() user: any, @Body() dto: DepositDto) {
     // Use email from DTO if provided, otherwise use email from JWT user
     const email = dto.email || user.email;
