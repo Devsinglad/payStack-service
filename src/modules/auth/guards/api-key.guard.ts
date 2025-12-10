@@ -13,12 +13,13 @@ import * as crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class ApiKeyGuard implements CanActivate {
+export class ApiKeyGuard extends PrismaClient implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private prisma: PrismaClient,
     private config: ConfigService,
-  ) {}
+  ) {
+    super();
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -31,11 +32,11 @@ export class ApiKeyGuard implements CanActivate {
     const apiKey = request.headers['x-api-key'];
 
     if (!apiKey) {
-      return true; // Allow JWT to handle if no API key
+      throw new ForbiddenException('API key is required for this endpoint');
     }
 
     // Find API key in database
-    const apiKeyRecord = await this.prisma.apiKey.findFirst({
+    const apiKeyRecord = await this.apiKey.findFirst({
       where: {
         keyHash: crypto.createHash('sha256').update(apiKey).digest('hex'),
         isActive: true,
@@ -72,7 +73,7 @@ export class ApiKeyGuard implements CanActivate {
     }
 
     // Update last used timestamp
-    await this.prisma.apiKey.update({
+    await this.apiKey.update({
       where: { id: apiKeyRecord.id },
       data: { lastUsedAt: new Date() },
     });

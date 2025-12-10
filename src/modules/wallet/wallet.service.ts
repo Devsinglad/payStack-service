@@ -11,16 +11,14 @@ import { PrismaClient } from '@prisma/client';
 
 // ==================== CONFIGURATION ====================
 @Injectable()
-export class WalletService {
+export class WalletService extends PrismaClient {
   private readonly paystackSecretKey: string;
   private readonly paystackWebhookSecret: string;
   private readonly paystackBaseUrl = 'https://api.paystack.co';
   private readonly appUrl: string;
 
-  constructor(
-    private prisma: PrismaClient,
-    private config: ConfigService,
-  ) {
+  constructor(private config: ConfigService) {
+    super();
     const appConfig = this.config.get<AppConfig>('app');
     if (!appConfig) {
       throw new Error('App configuration not found');
@@ -64,7 +62,7 @@ export class WalletService {
       );
 
       // Create pending transaction in database
-      await this.prisma.transaction.create({
+      await this.transaction.create({
         data: {
           reference,
           userId,
@@ -106,7 +104,7 @@ export class WalletService {
     const { reference, amount, status, gateway_response } = data;
 
     // Verify transaction exists
-    const transaction = await this.prisma.transaction.findUnique({
+    const transaction = await this.transaction.findUnique({
       where: { reference },
     });
 
@@ -120,7 +118,7 @@ export class WalletService {
     }
 
     // Use database transaction to ensure atomicity
-    await this.prisma.$transaction(async (tx) => {
+    await this.$transaction(async (tx) => {
       // Update transaction status
       await tx.transaction.update({
         where: { reference },
@@ -157,7 +155,7 @@ export class WalletService {
 
   // Verify deposit status manually (doesn't credit wallet)
   async verifyDepositStatus(reference: string) {
-    const transaction = await this.prisma.transaction.findUnique({
+    const transaction = await this.transaction.findUnique({
       where: { reference },
     });
 
@@ -186,7 +184,7 @@ export class WalletService {
 
   // Create or get wallet (auto-creates if doesn't exist)
   async getOrCreateWallet(userId: string) {
-    let wallet = await this.prisma.wallet.findUnique({
+    let wallet = await this.wallet.findUnique({
       where: { userId },
     });
 
@@ -200,7 +198,7 @@ export class WalletService {
         walletNumber = this.generateWalletNumber();
 
         // Check if wallet number already exists
-        const exists = await this.prisma.wallet.findUnique({
+        const exists = await this.wallet.findUnique({
           where: { walletNumber },
         });
 
@@ -217,7 +215,7 @@ export class WalletService {
       }
 
       // Create wallet
-      wallet = await this.prisma.wallet.create({
+      wallet = await this.wallet.create({
         data: {
           userId,
           walletNumber,
@@ -255,7 +253,7 @@ export class WalletService {
   // Transfer between wallets
   async transfer(fromUserId: string, toWalletNumber: string, amount: number) {
     // Find recipient by wallet number
-    const recipientWallet = await this.prisma.wallet.findUnique({
+    const recipientWallet = await this.wallet.findUnique({
       where: { walletNumber: toWalletNumber },
     });
 
@@ -264,7 +262,7 @@ export class WalletService {
     }
 
     // Check sender's balance
-    const senderWallet = await this.prisma.wallet.findUnique({
+    const senderWallet = await this.wallet.findUnique({
       where: { userId: fromUserId },
     });
 
@@ -273,7 +271,7 @@ export class WalletService {
     }
 
     // ATOMIC TRANSFER using database transaction
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.$transaction(async (tx) => {
       // Deduct from sender
       await tx.wallet.update({
         where: { userId: fromUserId },
@@ -327,7 +325,7 @@ export class WalletService {
 
   // Get transaction history
   async getTransactionHistory(userId: string) {
-    const transactions = await this.prisma.transaction.findMany({
+    const transactions = await this.transaction.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       select: {

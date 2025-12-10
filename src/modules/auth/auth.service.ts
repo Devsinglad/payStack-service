@@ -1,8 +1,6 @@
 import {
   Injectable,
   UnauthorizedException,
-  OnModuleInit,
-  OnModuleDestroy,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
