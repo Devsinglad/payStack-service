@@ -42,10 +42,12 @@ export class WalletController {
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('deposit')
   async deposit(@GetUser() user: any, @Body() dto: DepositDto) {
+    // Use email from DTO if provided, otherwise use email from JWT user
+    const email = dto.email || user.email;
     const result = await this.walletService.initiateDeposit(
       user.id,
       dto.amount,
-      user.email,
+      email,
     );
     return buildSuccessResponse('Deposit initiated successfully', result);
   }
@@ -124,6 +126,7 @@ export class WalletController {
   // ==================== DEPOSIT REFRENCE ====================
   @Get('deposit/:reference/status')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
+  @ApiBearerAuth()
   @RequirePermission('read')
   @ApiOperation({ summary: 'Verify deposit transaction status' })
   @ApiResponse({ status: 200, description: 'Transaction status retrieved' })
@@ -135,7 +138,8 @@ export class WalletController {
   @ApiResponse({ status: 404, description: 'Transaction not found' })
   @ApiParam({ name: 'reference', description: 'Transaction reference' })
   async verifyDeposit(@Param('reference') reference: string) {
-    return this.walletService.verifyDepositStatus(reference);
+    const result = await this.walletService.verifyDepositStatus(reference);
+    return buildSuccessResponse('Transaction status retrieved', result);
   }
 
   // ==================== WALLET ENDPOINTS ====================
@@ -143,6 +147,7 @@ export class WalletController {
   @Get('balance')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('read')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get wallet balance' })
   @ApiResponse({ status: 200, description: 'Wallet balance retrieved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -151,11 +156,13 @@ export class WalletController {
     description: 'Forbidden - Insufficient permissions',
   })
   async getBalance(@GetUser() user: any) {
-    return this.walletService.getBalance(user.id);
+    const result = await this.walletService.getBalance(user.id);
+    return buildSuccessResponse('Wallet balance retrieved', result);
   }
 
   @Get('details')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
+  @ApiBearerAuth()
   @RequirePermission('read')
   @ApiOperation({ summary: 'Get wallet details' })
   @ApiResponse({ status: 200, description: 'Wallet details retrieved' })
@@ -165,7 +172,8 @@ export class WalletController {
     description: 'Forbidden - Insufficient permissions',
   })
   async getWalletDetails(@GetUser() user: any) {
-    return this.walletService.getWalletDetails(user.id);
+    const result = await this.walletService.getWalletDetails(user.id);
+    return buildSuccessResponse('Wallet details retrieved', result);
   }
 
   // ==================== TRANSFER ENDPOINTS ====================
@@ -173,8 +181,14 @@ export class WalletController {
   @Post('transfer')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('transfer')
+  @ApiBearerAuth()
   async transfer(@GetUser() user: any, @Body() dto: TransferDto) {
-    return this.walletService.transfer(user.id, dto.wallet_number, dto.amount);
+    const result = await this.walletService.transfer(
+      user.id,
+      dto.wallet_number,
+      dto.amount,
+    );
+    return buildSuccessResponse('Transfer completed successfully', result);
   }
 
   // ==================== TRANSACTION ENDPOINTS ====================
@@ -189,6 +203,7 @@ export class WalletController {
     status: 403,
     description: 'Forbidden - Insufficient permissions',
   })
+  @ApiBearerAuth()
   async getTransactions(@GetUser() user: any) {
     const result = await this.walletService.getTransactionHistory(user.id);
     return buildSuccessResponse('Transaction history retrieved', result);

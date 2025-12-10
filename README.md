@@ -53,7 +53,7 @@ This service provides a comprehensive API for handling financial operations incl
 ### Webhooks & Callbacks
 
 - `POST /wallet/paystack/webhook` - Paystack webhook handler
-- `GET /wallet/paystack/callback` - Paystack payment callback
+- `GET /wallet/paystack/callback` - Paystack payment callback (https://paystack-service.up.railway.app/wallet/paystack/callback)
 
 ## Installation
 
@@ -201,7 +201,6 @@ Once the server is running, visit `http://localhost:3000/docs` to view the inter
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
 
 - Create an issue in the GitHub repository
 - Review the API documentation at `/docs`
