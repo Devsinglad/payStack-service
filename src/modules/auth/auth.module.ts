@@ -9,7 +9,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from './guards/jwt.guard';
 import { ApiKeyGuard } from './guards/api-key.guard';
-import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -22,7 +21,6 @@ import { PrismaModule } from '../../prisma/prisma.module';
         expiresIn: '7d',
       },
     }),
-    PrismaModule,
   ],
   controllers: [AuthController],
   providers: [

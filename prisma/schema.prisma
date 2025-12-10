@@ -39,6 +39,7 @@ model ApiKey {
   permissions               String[]
   expiresAt                 DateTime
   isActive                  Boolean          @default(true)
+  lastUsedAt                DateTime?
   createdAt                 DateTime         @default(now())
   updatedAt                 DateTime         @updatedAt
   

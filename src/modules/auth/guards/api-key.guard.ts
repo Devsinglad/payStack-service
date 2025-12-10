@@ -6,17 +6,17 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PrismaService } from '../../../prisma/prisma.service';
 import { PERMISSIONS_KEY } from '../decorators/require-permission.decorator';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../../config/app.config';
 import * as crypto from 'crypto';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private prisma: PrismaService,
+    private prisma: PrismaClient,
     private config: ConfigService,
   ) {}
 

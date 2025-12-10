@@ -3,11 +3,11 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../config/app.config';
 import * as crypto from 'crypto';
+import { PrismaClient } from '@prisma/client';
 
 // ==================== CONFIGURATION ====================
 @Injectable()
@@ -18,7 +18,8 @@ export class WalletService {
   private readonly appUrl: string;
 
   constructor(
-    private prisma: PrismaService,
+    private prisma: PrismaClient,
+
     private config: ConfigService,
   ) {
     const appConfig = this.config.get<AppConfig>('app');
