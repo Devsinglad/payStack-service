@@ -19,7 +19,6 @@ export class WalletService {
 
   constructor(
     private prisma: PrismaClient,
-
     private config: ConfigService,
   ) {
     const appConfig = this.config.get<AppConfig>('app');
@@ -27,7 +26,6 @@ export class WalletService {
       throw new Error('App configuration not found');
     }
     this.paystackSecretKey = appConfig.paystackSecretKey;
-    this.appUrl = appConfig.appUrl;
   }
 
   // ==================== DEPOSIT OPERATIONS ====================
