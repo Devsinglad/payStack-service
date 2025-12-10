@@ -42,6 +42,7 @@ export class WalletController {
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('deposit')
   @ApiBearerAuth()
+  @ApiSecurity('api_key', ['x-api-key'])
   @ApiOperation({ summary: 'Initiate a deposit transaction' })
   @ApiResponse({ status: 200, description: 'Deposit initiated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -135,6 +136,7 @@ export class WalletController {
   @Get('deposit/:reference/status')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @ApiBearerAuth()
+  @ApiSecurity('api_key', ['x-api-key'])
   @RequirePermission('read')
   @ApiOperation({ summary: 'Verify deposit transaction status' })
   @ApiResponse({ status: 200, description: 'Transaction status retrieved' })
@@ -155,6 +157,7 @@ export class WalletController {
   @Get('balance')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('read')
+  @ApiSecurity('api_key', ['x-api-key'])
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get wallet balance' })
   @ApiResponse({ status: 200, description: 'Wallet balance retrieved' })
@@ -171,6 +174,7 @@ export class WalletController {
   @Get('details')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @ApiBearerAuth()
+  @ApiSecurity('api_key', ['x-api-key'])
   @RequirePermission('read')
   @ApiOperation({ summary: 'Get wallet details' })
   @ApiResponse({ status: 200, description: 'Wallet details retrieved' })
@@ -189,6 +193,7 @@ export class WalletController {
   @Post('transfer')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
   @RequirePermission('transfer')
+  @ApiSecurity('api_key', ['x-api-key'])
   @ApiBearerAuth()
   async transfer(@GetUser() user: any, @Body() dto: TransferDto) {
     const result = await this.walletService.transfer(
@@ -203,6 +208,7 @@ export class WalletController {
 
   @Get('transactions')
   @UseGuards(JwtAuthGuard, ApiKeyGuard)
+  @ApiSecurity('api_key', ['x-api-key'])
   @RequirePermission('read')
   @ApiOperation({ summary: 'Get transaction history' })
   @ApiResponse({ status: 200, description: 'Transaction history retrieved' })
