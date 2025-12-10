@@ -49,7 +49,7 @@ export class WalletService extends PrismaClient {
           email,
           amount: amountInKobo,
           reference,
-          callback_url: `${this.appUrl}/wallet/callback`,
+          callback_url: `${this.appUrl}`,
           metadata: {
             user_id: userId,
             transaction_type: 'deposit',
