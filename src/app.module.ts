@@ -5,7 +5,6 @@ import { AppService } from './app.service';
 import { ApiKeyModule } from './modules/api-key/api-key.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WalletModule } from './modules/wallet/wallet.module';
-import { PrismaModule } from './prisma/prisma.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -14,7 +13,6 @@ import appConfig from './config/app.config';
       isGlobal: true,
       load: [appConfig],
     }),
-    PrismaModule,
     ApiKeyModule,
     AuthModule,
     WalletModule,
