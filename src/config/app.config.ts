@@ -11,6 +11,7 @@ export interface AppConfig {
   googleCallbackUrl: string;
   databaseUrl: string;
   paystackSecretKey: string;
+  paystackcallbackUrl: string;
 }
 
 const parseCorsOrigins = (origins: string | undefined): string[] | boolean => {
@@ -32,4 +33,7 @@ export default registerAs<AppConfig>('app', () => ({
     'http://localhost:3000/auth/google/callback',
   databaseUrl: process.env.DATABASE_URL ?? '',
   paystackSecretKey: process.env.PAYSTACK_SECRET_KEY ?? '',
+  paystackcallbackUrl:
+    process.env.PAYSTACK_CALLBACK_URL ??
+    'http://localhost:3000/wallet/paystack/callback',
 }));

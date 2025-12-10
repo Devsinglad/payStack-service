@@ -24,6 +24,8 @@ export class WalletService extends PrismaClient {
       throw new Error('App configuration not found');
     }
     this.paystackSecretKey = appConfig.paystackSecretKey;
+    this.paystackWebhookSecret = appConfig.paystackSecretKey;
+    this.appUrl = appConfig.paystackcallbackUrl;
   }
 
   // ==================== DEPOSIT OPERATIONS ====================
