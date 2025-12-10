@@ -9,7 +9,6 @@ import { AppConfig } from '../../config/app.config';
 import * as crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
-// ==================== CONFIGURATION ====================
 @Injectable()
 export class WalletService extends PrismaClient {
   private readonly paystackSecretKey: string;
@@ -114,7 +113,7 @@ export class WalletService extends PrismaClient {
       throw new NotFoundException('Transaction not found');
     }
 
-    // IDEMPOTENCY CHECK: Don't process already successful transactions
+    // IDEMPOTENCY CHECK
     if (transaction.status === 'success') {
       return { status: true, message: 'Already processed' };
     }
@@ -131,9 +130,10 @@ export class WalletService extends PrismaClient {
         },
       });
 
-      // Credit wallet only if payment was successful
+      // Credits wallet if payment was successful
       if (status === 'success') {
-        const amountInNaira = amount / 100; // Convert from kobo to naira
+        // Convert from kobo to naira
+        const amountInNaira = amount / 100;
 
         await tx.wallet.upsert({
           where: { userId: transaction.userId },
