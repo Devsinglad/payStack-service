@@ -9,7 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/require-permission.decorator';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../../../config/app.config';
-import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
@@ -35,10 +35,9 @@ export class ApiKeyGuard extends PrismaClient implements CanActivate {
       throw new ForbiddenException('API key is required for this endpoint');
     }
 
-    // Find API key in database
-    const apiKeyRecord = await this.apiKey.findFirst({
+    // Find all active API keys for the user (we need to check them one by one)
+    const allApiKeys = await this.apiKey.findMany({
       where: {
-        keyHash: crypto.createHash('sha256').update(apiKey).digest('hex'),
         isActive: true,
       },
       include: {
@@ -46,7 +45,22 @@ export class ApiKeyGuard extends PrismaClient implements CanActivate {
       },
     });
 
+    console.log(`Found ${allApiKeys.length} active API keys`);
+
+    // Find the matching API key by comparing the provided key with stored hashes
+    let apiKeyRecord: any = null;
+    for (const key of allApiKeys) {
+      const isMatch = await bcrypt.compare(apiKey, key.keyHash);
+      console.log(`Checking key ${key.id}, match: ${isMatch}`);
+      if (isMatch) {
+        apiKeyRecord = key;
+        console.log(`Found matching API key: ${key.id}`);
+        break;
+      }
+    }
+
     if (!apiKeyRecord) {
+      console.log('No matching API key found');
       throw new ForbiddenException('Invalid API key');
     }
 
