@@ -123,7 +123,8 @@ export class WalletController {
     }
 
     // Verify transaction status
-    const status = await this.walletService.verifyDepositStatus(reference);
+    const status =
+      await this.walletService.verifyDepositWithPaystack(reference);
 
     return buildSuccessResponse('Payment processed', {
       status: status.status,
@@ -150,6 +151,29 @@ export class WalletController {
   async verifyDeposit(@Param('reference') reference: string) {
     const result = await this.walletService.verifyDepositStatus(reference);
     return buildSuccessResponse('Transaction status retrieved', result);
+  }
+
+  @Get('deposit/:reference/verify')
+  @UseGuards(JwtAuthGuard, ApiKeyGuard)
+  @ApiBearerAuth()
+  @ApiSecurity('api_key', ['x-api-key'])
+  @RequirePermission('read')
+  @ApiOperation({ summary: 'Verify deposit transaction with Paystack API' })
+  @ApiResponse({
+    status: 200,
+    description: 'Transaction verified with Paystack',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  @ApiResponse({ status: 404, description: 'Transaction not found' })
+  @ApiParam({ name: 'reference', description: 'Transaction reference' })
+  async verifyDepositWithPaystack(@Param('reference') reference: string) {
+    const result =
+      await this.walletService.verifyDepositWithPaystack(reference);
+    return buildSuccessResponse('Transaction verified with Paystack', result);
   }
 
   // ==================== WALLET ENDPOINTS ====================

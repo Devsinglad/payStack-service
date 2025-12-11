@@ -157,6 +157,109 @@ export class WalletService extends PrismaClient {
 
   // ==================== VERIFICATION OPERATIONS ====================
 
+  // Verify deposit with Paystack API and update local status
+  async verifyDepositWithPaystack(reference: string) {
+    // First check if transaction exists in our database
+    const transaction = await this.transaction.findUnique({
+      where: { reference },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    try {
+      // Call Paystack Verify Transaction API
+      const response = await axios.get(
+        `${this.paystackBaseUrl}/transaction/verify/${reference}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.paystackSecretKey}`,
+          },
+        },
+      );
+
+      const paystackData = response.data.data;
+      const paystackStatus = paystackData.status;
+      const paystackAmount = paystackData.amount / 100; // Convert from kobo to naira
+
+      // If the transaction is already successful in our database, just return the status
+      if (transaction.status === 'success') {
+        return {
+          reference: transaction.reference,
+          status: transaction.status,
+          amount: transaction.amount,
+          paystackStatus,
+          message: 'Transaction already processed',
+        };
+      }
+
+      // If Paystack confirms the transaction is successful, update our database and credit wallet
+      if (paystackStatus === 'success') {
+        await this.$transaction(async (tx) => {
+          // Update transaction status
+          await tx.transaction.update({
+            where: { reference },
+            data: {
+              status: 'success',
+              gatewayResponse: paystackData.gateway_response,
+              completedAt: new Date(),
+            },
+          });
+
+          // Credit the user's wallet
+          await tx.wallet.upsert({
+            where: { userId: transaction.userId },
+            create: {
+              userId: transaction.userId,
+              balance: paystackAmount,
+            },
+            update: {
+              balance: {
+                increment: paystackAmount,
+              },
+            },
+          });
+        });
+
+        return {
+          reference: transaction.reference,
+          status: 'success',
+          amount: paystackAmount,
+          paystackStatus,
+          message: 'Payment verified and wallet credited',
+        };
+      } else {
+        // If Paystack status is not successful, update our database
+        await this.transaction.update({
+          where: { reference },
+          data: {
+            status: 'failed',
+            gatewayResponse: paystackData.gateway_response,
+            completedAt: new Date(),
+          },
+        });
+
+        return {
+          reference: transaction.reference,
+          status: 'failed',
+          amount: transaction.amount,
+          paystackStatus,
+          message: 'Payment failed',
+        };
+      }
+    } catch (error) {
+      // If Paystack API call fails, return the current status from our database
+      return {
+        reference: transaction.reference,
+        status: transaction.status,
+        amount: transaction.amount,
+        paystackStatus: 'unknown',
+        message: 'Unable to verify with Paystack at this time',
+      };
+    }
+  }
+
   // Verify deposit status manually (doesn't credit wallet)
   async verifyDepositStatus(reference: string) {
     const transaction = await this.transaction.findUnique({
