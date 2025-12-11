@@ -152,8 +152,6 @@ export class WalletService extends PrismaClient {
           },
         });
       }
-      // For failed transactions, we don't need to do anything else
-      // The transaction status is already updated to 'failed'
     });
 
     return { status: true };
@@ -161,7 +159,6 @@ export class WalletService extends PrismaClient {
 
   // ==================== VERIFICATION OPERATIONS ====================
 
-  // Verify deposit with Paystack API and update local status
   async verifyDepositWithPaystack(reference: string) {
     // First check if transaction exists in our database
     const transaction = await this.transaction.findUnique({
@@ -187,7 +184,6 @@ export class WalletService extends PrismaClient {
       const paystackStatus = paystackData.status;
       const paystackAmount = paystackData.amount / 100; // Convert from kobo to naira
 
-      // If the transaction is already successful in our database, just return the status
       if (transaction.status === 'success') {
         return {
           reference: transaction.reference,
@@ -234,7 +230,6 @@ export class WalletService extends PrismaClient {
           message: 'Payment verified and wallet credited',
         };
       } else {
-        // If Paystack status is not successful, update our database
         await this.transaction.update({
           where: { reference },
           data: {
@@ -275,7 +270,7 @@ export class WalletService extends PrismaClient {
 
       return {
         reference,
-        status: 'pending',
+        status: 'failed',
         amount: transaction.amount,
         message: 'Unable to verify payment status. Please try again.',
       };
