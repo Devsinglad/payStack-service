@@ -235,7 +235,8 @@ export class WalletService extends PrismaClient {
           where: { reference },
           data: {
             status: 'failed',
-            gatewayResponse: paystackData.gateway_response,
+            gatewayResponse:
+              paystackData.gateway_response || 'Payment not completed',
             completedAt: new Date(),
           },
         });
@@ -249,13 +250,29 @@ export class WalletService extends PrismaClient {
         };
       }
     } catch (error) {
-      // If Paystack API call fails, return the current status from our database
+      if (error.response?.status === 404) {
+        await this.transaction.update({
+          where: { reference },
+          data: {
+            status: 'failed',
+            gatewayResponse: 'Transaction abandoned or not completed',
+            completedAt: new Date(),
+          },
+        });
+
+        return {
+          reference,
+          status: 'failed',
+          amount: transaction.amount,
+          message: 'Payment was abandoned',
+        };
+      }
+
       return {
-        reference: transaction.reference,
-        status: transaction.status,
+        reference,
+        status: 'pending',
         amount: transaction.amount,
-        paystackStatus: 'unknown',
-        message: 'Unable to verify with Paystack at this time',
+        message: 'Unable to verify payment status. Please try again.',
       };
     }
   }
