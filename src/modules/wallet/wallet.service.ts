@@ -97,8 +97,8 @@ export class WalletService extends PrismaClient {
 
   // Handle Paystack webhook (IDEMPOTENT)
   async handleWebhook(event: string, data: any) {
-    // Only process successful charges
-    if (event !== 'charge.success') {
+    // Only process charge events (both success and failure)
+    if (event !== 'charge.success' && event !== 'charge.failed') {
       return { status: true, message: 'Event ignored' };
     }
 
@@ -114,7 +114,7 @@ export class WalletService extends PrismaClient {
     }
 
     // IDEMPOTENCY CHECK
-    if (transaction.status === 'success') {
+    if (transaction.status === 'success' || transaction.status === 'failed') {
       return { status: true, message: 'Already processed' };
     }
 
@@ -130,7 +130,7 @@ export class WalletService extends PrismaClient {
         },
       });
 
-      // Credits wallet if payment was successful
+      // Credits wallet only if payment was successful
       if (status === 'success') {
         // Convert from kobo to naira
         const amountInNaira = amount / 100;
@@ -148,6 +148,8 @@ export class WalletService extends PrismaClient {
           },
         });
       }
+      // For failed transactions, we don't need to do anything else
+      // The transaction status is already updated to 'failed'
     });
 
     return { status: true };
@@ -310,7 +312,7 @@ export class WalletService extends PrismaClient {
       }
 
       // Deducting from sender with optimistic locking using fresh balance
-       await tx.wallet.update({
+      await tx.wallet.update({
         where: {
           userId: fromUserId,
           balance: freshSenderWallet.balance,
