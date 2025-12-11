@@ -98,7 +98,7 @@ export class WalletService extends PrismaClient {
   // Handle Paystack webhook (IDEMPOTENT)
   async handleWebhook(event: string, data: any) {
     // Only process charge events (both success and failure)
-    if (event !== 'charge.success' && event !== 'charge.failed') {
+    if (!event.startsWith('charge.')) {
       return { status: true, message: 'Event ignored' };
     }
 
@@ -118,20 +118,24 @@ export class WalletService extends PrismaClient {
       return { status: true, message: 'Already processed' };
     }
 
+    // Determine if the payment was successful
+    const isPaymentSuccessful =
+      event === 'charge.success' && status === 'success';
+
     // Use database transaction to ensure atomicity
     await this.$transaction(async (tx) => {
       // Update transaction status
       await tx.transaction.update({
         where: { reference },
         data: {
-          status: status === 'success' ? 'success' : 'failed',
+          status: isPaymentSuccessful ? 'success' : 'failed',
           gatewayResponse: gateway_response,
           completedAt: new Date(),
         },
       });
 
       // Credits wallet only if payment was successful
-      if (status === 'success') {
+      if (isPaymentSuccessful) {
         // Convert from kobo to naira
         const amountInNaira = amount / 100;
 
@@ -250,6 +254,7 @@ export class WalletService extends PrismaClient {
         };
       }
     } catch (error) {
+      console.error('Error verifying deposit with Paystack:', error);
       if (error.response?.status === 404) {
         await this.transaction.update({
           where: { reference },
